@@ -3,29 +3,50 @@ package cats.derived
 import alleycats.Empty
 import shapeless3.deriving.K0
 import scala.annotation.*
+import scala.compiletime.*
 
 object empty extends EmptyDerivation
 
-opaque type DerivedEmpty[A] = Empty[A]
+opaque type Derived[A] = A
+
+object Derived:
+  def apply[A](e: A): Derived[A] = e
+  
+  extension[A](derived: Derived[A])
+    def dealias: A = derived
+
+  opaque type Or[A] = A
+  object Or extends OrInstances:
+    def from[A](a: A): Or[A] = a
+    def fromDerived[A](a: Derived[A]): Or[A] = a
+    extension[A](or: Or[A])
+      def dealias: A = or
+
+trait OrInstances:
+  inline given [A]: Derived.Or[A] = summonFrom {
+    case a: A => Derived.Or.from(a)
+    case da: Derived[A] => Derived.Or.fromDerived(da)
+  }
+
+type DerivedEmpty[A] = Derived[Empty[A]]
 
 object DerivedEmpty extends DerivedEmptyInstances:
-  type Of[A] = Alt[Empty[A], DerivedEmpty[A]]
-  def apply[A](e: Empty[A]): DerivedEmpty[A] = e
+  type Of[A] = Derived.Or[Empty[A]]
 
-  extension[A](de: DerivedEmpty[A])
-    def empty: Empty[A] = de
 trait DerivedEmptyInstances:
   import DerivedEmpty.Of
 
   given product[A](using inst: K0.ProductInstances[Of, A]): DerivedEmpty[A] =
-    DerivedEmpty(Empty(inst.unifyUnsafe.construct([A] => (A: Empty[A]) => A.empty)))
+    Derived(Empty(inst.construct([A] => (_: Of[A]).dealias.empty)))
 
   inline given coproduct[A](using gen: K0.CoproductGeneric[A]): DerivedEmpty[A] =
-    DerivedEmpty(K0.summonFirst[Of, gen.MirroredElemTypes, A].unifyUnsafe)
+    Derived(K0.summonFirst[Of, gen.MirroredElemTypes, A].dealias)
 
 trait EmptyDerivation:
   extension (E: Empty.type)
-    def derived[A](using instance: DerivedEmpty[A]): Empty[A] = instance.empty
+    inline def derived[A]: Empty[A] = 
+      import DerivedEmpty.given
+      summonInline[DerivedEmpty[A]].dealias
 
 import empty._
     
