@@ -12,13 +12,12 @@ object Derived:
 
   opaque type Or[A] = A
   object Or extends OrInstances:
-    def from[A](a: A): Or[A] = a
-    def fromDerived[A](a: Derived[A]): Or[A] = a
+    def apply[A](a: A | Derived[A]): Or[A] = a
     extension[A](or: Or[A])
       def dealias: A = or
 
 trait OrInstances:
   inline given [A]: Derived.Or[A] = summonFrom {
-    case a: A => Derived.Or.from(a)
-    case da: Derived[A] => Derived.Or.fromDerived(da)
+    case a: A => Derived.Or(a)
+    case da: Derived[A] => Derived.Or(da)
   }
