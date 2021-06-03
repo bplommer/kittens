@@ -15,8 +15,13 @@ object Alt extends AltInstances:
   def secondary[A, B](b: B): Alt[A, B] = b
 
   extension [A, B](alt: Alt[A, B]) def unify: A | B = alt
+  
+  extension [A, B](alt: Alt[A, B]) def unifyUnsafe: A = alt.asInstanceOf
   extension [I[f[_], t] <: K0.Instances[f, t], F[_], G[x] <: F[x], T]
     (inst: I[Of0[F, G], T]) @targetName("unifyK0") def unify: I[F, T] = inst
+
+  extension [I[f[_], t] <: K0.Instances[f, t], F[_], G[_], T]
+    (inst: I[Of0[F, G], T]) def unifyUnsafe: I[F, T] = inst.asInstanceOf
   extension [I[f[_[_]], t[_]] <: K1.Instances[f, t], F[_[_]], G[x[_]] <: F[x], T[_]]
     (inst: I[Of1[F, G], T]) @targetName("unifyK1") def unify: I[F, T] = inst
   extension [I[f[_[_[_]]], t[_[_]]] <: K11.Instances[f, t], F[_[_[_]]], G[x[_[_]]] <: F[x], T[_[_]]]
